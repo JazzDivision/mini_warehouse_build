@@ -12,5 +12,3 @@ FROM orders;
 SELECT * 
 INTO raw_products
 FROM products;
-
-SELECT * FROm raw_products;
