@@ -2,17 +2,21 @@
 
 ## Overview
 
-This project builds a simple SQL data pipeline using a small dataset of users, orders, and products. The goal was to take raw data, clean it, and organise it into a structured format that is easy to query and analyse.
+This project demonstrates a simple SQL data pipeline using a small dataset of users, orders, and products.
 
-This project takes messy data and turns it into something usable. It does this in three steps:
+The goal is to:
 
-1. Store the data as-is (raw layer)
-2. Clean the data (staging layer)
-3. Organise the data into connected tables (final model - star schema)
+- Load raw data from CSV files
+- Clean and validate the data
+- Structure it into a relational model that supports analysis
 
 ---
 
-## Step 1: Raw Layer
+## Approach
+
+The pipeline is built in three stages:
+
+### 1. Raw Layer
 
 Tables:
 
@@ -20,22 +24,18 @@ Tables:
 - raw_orders
 - raw_products
 
-What took place during this stage:
+What happens:
 
-- Data is loaded directly from CSV files
+- Data is copied directly from the imported CSV tables into raw tables
 - No cleaning or validation is applied
 
-Example:
+Purpose:
 
-- Dates may be stored as text
-- Duplicate rows may exist
-- Missing values may exist
-
-Purpose: Capture the original data exactly as it arrives.
+- Preserve the original data as a reliable starting point
 
 ---
 
-## Step 2: Staging Layer
+### 2. Staging Layer
 
 Tables:
 
@@ -43,34 +43,36 @@ Tables:
 - stg_orders
 - stg_products
 
-What took place during this stage:
+What happens:
 
-- Remove rows with missing IDs
-- Remove duplicate records
-- Remove invalid values (e.g. negative amounts)
-- Keep only usable data
+- Duplicate records are removed using DISTINCT
+- Rows with missing key fields (e.g. IDs) are filtered out
+- Invalid values are removed (e.g. negative prices or amounts)
 
-Purpose: Make the data safe to use.
+Examples:
+
+- Users without a user_id are excluded
+- Orders without a user_id or product_id are excluded
+- Negative values are filtered out
+
+Purpose:
+
+- Ensure the data is clean, consistent, and usable
 
 ---
 
-## Step 3: Final Model (Star Schema)
+### 3. Final Model (Star Schema)
 
 Tables:
 
-- dim_user (users)
-- dim_product (products)
-- fact_order (orders)
+- dim_user → user details (who placed orders)
+- dim_product → product details (what was sold)
+- fact_order → order transactions (what orders were placed)
 
-### Explanation
+What happens:
 
-Instead of one messy dataset, the data is split into:
-
-- One table for users (who made orders)
-- One table for products (what was ordered)
-- One table for orders (orders that took place)
-
-The orders table connects to users and products using IDs.
+- Clean data from staging tables is loaded into structured tables
+- Data types are corrected where needed (e.g. converting text to DATE or DECIMAL), as this was missed in the staging layer
 
 ---
 
@@ -79,21 +81,116 @@ The orders table connects to users and products using IDs.
 - fact_order.user_id → dim_user.user_id
 - fact_order.product_id → dim_product.product_id
 
-This ensures:
-
-- Every order belongs to a valid user
-- Every order references a valid product
+These relationships are enforced using foreign keys.
 
 ---
 
-## Why This Structure Is Used
+## Key Concepts & Learnings
 
-This structure makes querying easier. Instead of repeating user and product details in every row:
+- How to load and structure data in SQL
+- How to clean and validate raw datasets
+- The importance of data types (e.g. converting text to DATE)
+- How primary and foreign keys enforce data integrity
+- How to organise data into a simple analytical model (star schema)
 
-- They are stored once
-- Orders just reference them using IDs
+### Primary Key
+
+- Uniquely identifies each row in a table
+- Example: `dim_user.user_id`
+- Ensures no duplicates and no NULLs
+
+### Foreign Key
+
+- Links one table to another
+- Example: `fact_order.user_id → dim_user.user_id`
+
+Purpose:
+
+- Ensures all relationships are valid
+- Prevents orders from referencing users or products that don’t exist
 
 ---
+
+## Challenges I Faced
+
+### 1. Data Types from CSV Imports
+
+When importing the CSV files, some fields (such as dates and numeric values) were automatically loaded as text (VARCHAR). This caused issues when inserting into the final model, as the target tables expected proper data types like DATE and DECIMAL.
+
+To fix this, I:
+
+- Used TRY_CONVERT() when loading data into the final tables
+- This allowed valid values to be converted, while preventing the process from failing on invalid data
+
+This reinforced the importance of checking and correcting data types when working with raw data.
+
+---
+
+### 2. Understanding and Applying Keys
+
+Initially, I found it difficult to understand how primary keys and foreign keys worked in practice. Through building the model, I learned that:
+
+- Primary keys ensure each row is unique and identifiable
+- Foreign keys enforce relationships between tables and prevent invalid references
+
+For example:
+
+- Each user in `dim_user` must have a unique `user_id`
+- Each order in `fact_order` must reference a valid user and product
+
+This helped me understand how databases maintain data integrity.
+
+---
+
+### 3. Handling Invalid or Incomplete Data
+
+The raw data contained:
+
+- Missing IDs
+- Duplicate records
+- Invalid values (e.g. negative amounts)
+
+These issues would cause problems later when applying keys or running queries.
+
+To address this, I:
+
+- Filtered out rows with NULL IDs
+- Removed duplicates using DISTINCT
+- Applied validation rules (e.g. amount >= 0)
+
+This showed how important it is to clean data before building relationships.
+
+---
+
+### 4. Building and Understanding the Star Schema
+
+I initially found the concept of a star schema difficult, as it introduced new terminology - such as fact and dimension tables.
+
+By implementing it step by step, I understood that:
+
+- The fact table represents events (orders)
+- Dimension tables provide descriptive context (users and products)
+- The structure makes queries clearer and avoids repeating data
+
+This helped me move from simple joins to a more structured approach to organising data.
+
+---
+
+### 5. Ordering the Pipeline Steps Correctly
+
+I also encountered issues when trying to apply relationships before the data was fully prepared.
+
+For example:
+
+- Foreign key constraints would fail if the referenced data had not been loaded yet
+
+I resolved this by:
+
+- Loading dimension tables first
+- Loading the fact table afterwards
+- Adding foreign keys only after the data was successfully inserted
+
+This improved my understanding of how data pipelines need to be built in the correct sequence.
 
 ## Example Query
 
