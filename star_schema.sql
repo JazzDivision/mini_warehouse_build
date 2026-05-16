@@ -7,9 +7,9 @@ DROP TABLE IF EXISTS dim_user;
 -- Creating the user dimension table (who placed orders)
 
 CREATE TABLE dim_user (
-    user_id      INT           NOT NULL,
-    user_name    NVARCHAR(100) NOT NULL,
-    onboarding_date  DATE          NULL,
+    user_id INT NOT NULL,
+    user_name NVARCHAR(100) NOT NULL,
+    onboarding_date DATE NULL,
     CONSTRAINT pk_dim_user PRIMARY KEY (user_id)
 );
 
@@ -26,10 +26,10 @@ WHERE user_id IS NOT NULL;
 -- Creating the products dimension table (what was sold) 
 
 CREATE TABLE dim_product (
-    product_id    INT           NOT NULL,
-    product_name  NVARCHAR(100) NOT NULL,
+    product_id INT NOT NULL,
+    product_name NVARCHAR(100) NOT NULL,
     prod_category NVARCHAR(100) NOT NULL,
-    price         DECIMAL(10,2) NULL,
+    price DECIMAL(10,2) NULL,
     CONSTRAINT pk_dim_product PRIMARY KEY (product_id)
 );
 
@@ -47,11 +47,11 @@ WHERE product_id IS NOT NULL;
 -- Creating the orders fact table (the event - orders that were made)
 
 CREATE TABLE fact_order (
-    order_id    INT           NOT NULL,
-    user_id     INT           NOT NULL,
-    product_id  INT           NOT NULL,
-    order_date  DATE          NULL,
-    amount      DECIMAL(10,2) NOT NULL,
+    order_id INT NOT NULL,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    order_date DATE NULL,
+    amount DECIMAL(10,2) NOT NULL,
     CONSTRAINT pk_fact_order PRIMARY KEY (order_id)
 );
 
@@ -64,7 +64,7 @@ SELECT
     TRY_CONVERT(DECIMAL(10,2), amount) AS amount
 FROM stg_orders
 WHERE order_id IS NOT NULL
-  AND user_id  IS NOT NULL
+  AND user_id IS NOT NULL
   AND product_id IS NOT NULL
   AND TRY_CONVERT(DECIMAL(10,2), amount) IS NOT NULL;
 
