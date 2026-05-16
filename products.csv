@@ -1,0 +1,31 @@
+﻿product_id,product_name,prod_category,price
+1,Nintendo Switch,Electronics,400
+2,Steam Deck,Electronics,400
+3,PlayStation 5,Electronics,300
+4,iPhone 17,Electronics,800
+5,Mug,Home,3
+6,Cutlery,Home,6
+7,Plates,Home,13
+8,Jug,Home,5
+9,Bluetooth speaker,Electronics,20
+10,Headphones,Electronics,80
+11,Pen,Stationary,2
+12,Backpack,Clothes,30
+13,Water bottle,Home,5
+14,Dog food,Pet,5
+15,Cat food,Pet,5
+16,Dog lead,Pet,10
+17,Pet bed,Pet,30
+18,Hair dryer,Electronics,70
+19,Hairbrush,Cosmetics,5
+20,Lawnmower,Appliances,200
+21,Vacuum cleaner,Appliances,250
+22,Laptop,Electronics,650
+23,Desktop PC,Electronics,700
+24,Xbox,Electronics,250
+25,CD player,Electronics,15
+26,Record player,Electronics,50
+27,Sofa,Home,400
+28,Double bed,Home,350
+29,Shoe rack,Home,25
+30,Wardrobe,Home,250
