@@ -152,14 +152,37 @@ These relationships are enforced using foreign keys.
 
 ### 1. Data Types from CSV Imports
 
-When importing the CSV files, some fields (such as dates and numeric values) were automatically loaded as text (VARCHAR). This caused issues when inserting into the final model, as the target tables expected proper data types like DATE and DECIMAL.
+When importing the CSV files, some fields (such as dates and numeric values) were automatically loaded as text (`VARCHAR`). This caused issues when inserting into the final model, as the target tables expected proper data types like `DATE` and `DECIMAL`.
 
-To fix this, I:
+**To fix this, I:**
 
-- Used `TRY_CONVERT()` when loading data into the final tables
-- This allowed valid values to be converted, while preventing the process from failing on invalid data
+- Used `TRY_CONVERT()` when loading data into the final tables  
+- This allowed valid values to be converted, while preventing the process from failing on invalid data  
 
 This reinforced the importance of checking and correcting data types when working with raw data.
+
+---
+
+### Additional Data Validation Observation
+
+While querying the final model, I identified **NULL values in the `order_date` column** within the `fact_order` table.
+
+This occurred because:
+
+- Some source data contained missing or invalid date values  
+- During transformation, `TRY_CONVERT()` returned `NULL` for any values that could not be converted to a valid `DATE`  
+
+This highlights an important aspect of data engineering:
+
+- Not all source data is clean or valid  
+- Pipelines should handle invalid data without breaking  
+- Additional validation or filtering may be required depending on business needs  
+
+In a production scenario, these records could be:
+
+- Filtered out  
+- Flagged for further investigation  
+- Or handled based on business requirements
 
 ---
 
