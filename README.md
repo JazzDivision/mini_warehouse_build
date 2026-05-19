@@ -233,14 +233,14 @@ The overall approach ensures that data is both reliable and easy to analyse.
 
 ### 1. Data Types from CSV Imports
 
-When importing the CSV files, some fields (such as dates and numeric values) were automatically loaded as text (`VARCHAR`). This caused issues when inserting into the final model, as the target tables expected proper data types like `DATE` and `DECIMAL`.
+When importing the CSV files, some fields (such as dates) were automatically loaded as text (`VARCHAR`). This caused issues when inserting into the final model, as the target tables expected proper data types like `DATE` and `DECIMAL`.
 
 **To fix this:**
 
 - Used `TRY_CONVERT()` when loading data into the final tables  
 - This allowed valid values to be converted, while preventing the process from failing on invalid data  
 
-This reinforced the importance of checking and correcting data types when working with raw data.
+This reinforced the importance of checking and correcting data types when working with raw data. In future, I would take extra care to catch this during staging.
 
 ---
 
