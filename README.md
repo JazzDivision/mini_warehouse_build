@@ -38,7 +38,7 @@ This makes the pipeline easier to debug, maintain, and extend.
 
 ---
 
-### 1. Raw Layer
+## 1. Raw Layer
 
 The first step in this project involved creating a raw layer within the database, where source data was loaded and kept as-is as a consolidated, reliable starting point that can be referred back to.
 
@@ -106,19 +106,6 @@ This included:
 This prepares the data to be safely used in a fact table.
 
 ---
-
-### 3. Final Model (Star Schema)
-
-Tables:
-
-- dim_user --> user details (who placed orders)
-- dim_product --> product details (what was sold)
-- fact_order --> order transactions (what orders were placed)
-
-What happens:
-
-- Clean data from staging tables is loaded into structured tables
-- Data types are corrected where needed (e.g. converting text to DATE or DECIMAL), as this was missed in the staging layer
 
 ## Final Tables (Dimensional Model)
 
