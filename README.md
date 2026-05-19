@@ -2,27 +2,27 @@
 
 ## Introduction
 
-A SQL-based mini data warehouse project demonstrating an end-to-end data pipeline from raw CSV ingestion to a structured star schema for analysis.
+A SQL-based mini data warehouse project demonstrating an end-to-end data pipeline, from raw CSV ingestion to a structured star schema for analysis.
 
-This project demonstrates how raw data can be transformed into an analysis-ready data model using SQL.
+I built this project to deepen my understanding of data warehousing concepts, particularly relationships between tables (using foreign keys), and how star schemas allow for optimised querying and analysis. I also wanted to practice moving data through an engineering pipeline, in addition to separating it into layers within the database.
 
 The pipeline includes:
 
-- Loading raw data from CSV files
-- Cleaning and validating records
-- Structuring the data into a star schema for analytical querying
+- Loading raw data from CSV files (raw layer)
+- Cleaning and validating records (staging layer)
+- Structuring the data into a star schema for analytical querying (output layer)
 
 ## Pipeline Overview
 
-CSV Files  
+CSV files  
 ↓  
-Raw Tables (no transformation)  
+Raw tables (no transformation)  
 ↓  
-Staging Tables (cleaning & validation)  
+Staging tables (cleaning & validation)  
 ↓  
-Star Schema (fact + dimension tables)  
+Star schema (fact + dimension tables)  
 ↓  
-Analytical Queries  
+Analytical queries  
 
 ---
 
@@ -32,7 +32,7 @@ This project uses a layered approach to separate concerns:
 
 - Raw layer preserves original data
 - Staging layer handles cleaning and validation
-- Final model structures data for analysis
+- Final model (star schema) structures data for analysis
 
 This makes the pipeline easier to debug, maintain, and extend.
 
@@ -40,46 +40,70 @@ This makes the pipeline easier to debug, maintain, and extend.
 
 ### 1. Raw Layer
 
-Tables:
+The first step in this project involved creating a raw layer within the database, where source data was loaded and kept as-is as a consolidated, reliable starting point that can be referred back to.
+
+As SQL Online IDE auto-creates tables when importing CSVs, I manually copied the data from them into new ones explicitly labelled as raw tables:
 
 - raw_users
 - raw_orders
 - raw_products
 
-What happens:
+---
 
-- Data is copied directly from the imported CSV tables into raw tables
-- No cleaning or validation is applied
+## 2. Staging Layer
 
-Purpose:
+As part of the warehouse design, staging tables were created to prepare raw data for reliable use in downstream modelling.
 
-- Preserve the original data as a reliable starting point
+The purpose of the staging layer was to:
+
+- Remove duplicate records
+- Ensure key fields are present e.g. IDs
+- Filter out invalid data
+- Standardise the structure before loading into final tables
+
+Each staging table was built directly from its corresponding raw table.
 
 ---
 
-### 2. Staging Layer
+### Users Staging
 
-Tables:
+The `stg_users` table was created from `raw_users` to ensure user data was clean and usable.
 
-- stg_users
-- stg_orders
-- stg_products
+This included:
 
-What happens:
+- Removing duplicate user records using DISTINCT
+- Filtering out rows where `user_id` is NULL
+- Retaining only essential fields required for downstream use e.g. user_name
 
-- Duplicate records are removed using DISTINCT
-- Rows with missing key fields (e.g. IDs) are filtered out
-- Invalid values are removed (e.g. negative prices or amounts)
+This ensures all users can be uniquely identified and safely joined to other tables.
 
-Examples:
+---
 
-- Users without a user_id are excluded
-- Orders without a user_id or product_id are excluded
-- Negative values are filtered out
+### Products Staging
 
-Purpose:
+The `stg_products` table was created from `raw_products` to clean and validate product data.
 
-- Ensure the data is clean, consistent, and usable
+This included:
+
+- Removing duplicate products using DISTINCT
+- Filtering out NULL product IDs
+- Ensuring prices are valid (non-negative)
+
+This prevents invalid or unrealistic values from affecting analysis.
+
+---
+
+### Orders Staging
+
+The `stg_orders` table was created from `raw_orders` to ensure only valid transactions are included.
+
+This included:
+
+- Removing rows with missing key fields (order_id, user_id, product_id)
+- Filtering out NULL or negative amounts
+- Ensuring each order can be linked to both a valid user and product
+
+This prepares the data to be safely used in a fact table.
 
 ---
 
@@ -96,32 +120,102 @@ What happens:
 - Clean data from staging tables is loaded into structured tables
 - Data types are corrected where needed (e.g. converting text to DATE or DECIMAL), as this was missed in the staging layer
 
+## Final Tables (Dimensional Model)
+
+Following the staging layer, the cleaned data is loaded into final tables designed for analysis.
+
+This layer separates data into:
+
+- Dimension tables (descriptive data)
+- A fact table (event data)
+
+This structure allows for reliable joins and supports typical analytical query patterns.
+
 ---
 
-## Data Model (Star Schema)
+### User Dimension (`dim_user`)
 
-The final schema follows a **star schema design**:
+The `dim_user` table stores information about users who placed orders.
 
-- **Fact table (`fact_order`)** --> records transactions/events  
-- **Dimension tables (`dim_user`, `dim_product`)** --> provide descriptive context  
+This includes:
 
-This structure simplifies querying and is optimised for analytical workloads.
+- `user_id` (primary key)
+- `user_name`
+- `onboarding_date`
+
+During loading:
+
+- Duplicate records are removed using DISTINCT
+- `user_id` is enforced as NOT NULL to ensure reliable joins
+- `TRY_CONVERT` is used to safely convert date values, with invalid values defaulting to NULL
+
+This ensures each user is uniquely identifiable and can be linked to orders.
 
 ---
 
-## Relationships
+### Product Dimension (`dim_product`)
 
-Primary and foreign keys are used to maintain data integrity:
+The `dim_product` table stores information about products.
 
-- Primary keys ensure each record is unique (e.g. dim_user.user_id)
-- Foreign keys enforce valid relationships (e.g. fact_order.user_id --> dim_user.user_id)
+This includes:
 
-This prevents invalid data, such as orders referencing non-existent users or products.
+- `product_id` (primary key)
+- `product_name`
+- `prod_category`
+- `price`
 
-- fact_order.user_id --> dim_user.user_id
-- fact_order.product_id --> dim_product.product_id
+During loading:
 
-These relationships are enforced using foreign keys.
+- Duplicate records are removed
+- `product_id` is enforced as NOT NULL
+- `TRY_CONVERT` is used to ensure prices are stored in a numeric format
+- Invalid values are handled safely without breaking the pipeline
+
+This ensures product data is consistent and suitable for reporting.
+
+---
+
+### Orders Fact Table (`fact_order`)
+
+The `fact_order` table represents the core event in the dataset — orders placed by users.
+
+This includes:
+
+- `order_id` (primary key)
+- `user_id` (foreign key)
+- `product_id` (foreign key)
+- `order_date`
+- `amount`
+
+During loading:
+
+- Rows with missing key relationships are removed
+- `TRY_CONVERT` is used to validate dates and numeric values
+- Invalid or NULL amounts are excluded to ensure accurate analysis
+
+---
+
+### Relationships
+
+Foreign key constraints were added *after* loading the data to simplify the loading process and avoid insert failures, then enforce relationships once the data was in place. Personally, I also find it to be more easily readable/cleaner in the script.
+
+- `fact_order.user_id --> dim_user.user_id`
+- `fact_order.product_id --> dim_product.product_id`
+
+These constraints ensure:
+
+- All orders relate to a valid user and product
+- Data integrity is maintained across the model
+
+This layer transforms cleaned staging data into a structured, query-ready format.
+
+The separation into dimension and fact tables:
+
+- Supports efficient joins
+- Improves data clarity
+- Aligns with common data warehousing practices
+
+The overall approach ensures that data is both reliable and easy to analyse.
 
 ---
 
@@ -154,7 +248,7 @@ These relationships are enforced using foreign keys.
 
 When importing the CSV files, some fields (such as dates and numeric values) were automatically loaded as text (`VARCHAR`). This caused issues when inserting into the final model, as the target tables expected proper data types like `DATE` and `DECIMAL`.
 
-**To fix this, I:**
+**To fix this:**
 
 - Used `TRY_CONVERT()` when loading data into the final tables  
 - This allowed valid values to be converted, while preventing the process from failing on invalid data  
