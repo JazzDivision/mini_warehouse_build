@@ -10,7 +10,7 @@ CREATE TABLE dim_user (
     user_id INT NOT NULL,
     user_name NVARCHAR(100) NOT NULL,
     onboarding_date DATE NULL,
-    CONSTRAINT pk_dim_user PRIMARY KEY (user_id)
+    CONSTRAINT pk_dim_user PRIMARY KEY (user_id) -- ID must be unique and identify each row within the table
 );
 
 -- Load users data into users dimension table, from the raw staging table
